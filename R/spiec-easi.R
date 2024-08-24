@@ -65,7 +65,7 @@ spiec.easi.otu_table <- function(data, ...) {
                                     threshold = 0.95,
                                     num_selected = 1)
     ref <- ref_df$idx[[1]]
-    return(t(alr(data + 1, ivar = ref)))
+    return(t(alr(data+1, ivar = ref)))
     #return(t(clr(data+1, 1)))
   } else if (inherits(data, 'list')) {
     ## multi domain spiec.easi, data must be list of numeric matrices
