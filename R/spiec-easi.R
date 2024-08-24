@@ -61,7 +61,12 @@ spiec.easi.otu_table <- function(data, ...) {
 # internal function to normalize a data matrix
   if (inherits(data, 'matrix')) {
     ## standard data pipeline
-    return(t(clr(data+1, 1)))
+    ref_df <- alrReferenceSelection(mcirobiome_assay = data,
+                                    threshold = 0.95,
+                                    num_selected = 1)
+    ref <- ref_df$idx[[1]]
+    return(t(alr(data + pseduo_count, ivar = ref)))
+    #return(t(clr(data+1, 1)))
   } else if (inherits(data, 'list')) {
     ## multi domain spiec.easi, data must be list of numeric matrices
     return(do.call('cbind', lapply(data, .spiec.easi.norm)))
@@ -345,4 +350,34 @@ spiec.easi.list <- function(data, ...) {
   if (!list.equal(snames) || !list.equal(ssizes))
     stop("Do not run multi.spiec.easi with unidentical sample scheme")
   spiec.easi.default(data, ...)
+}
+
+alrReferenceSelection <- function(mcirobiome_assay, threshold, num_selected) {
+  
+  df <- mcirobiome_assay
+  
+  #calculate the dispersion of the features
+  df_dispersion <- lapply(1:ncol(df), FUN = function(i) {
+    res <- var(df[,i]) / mean(df[,i])
+    res
+  })
+  df_dis <- do.call("rbind", df_dispersion)
+  rownames(df_dis) <- colnames(df)
+  #calculate the presence
+  df_pre <- lapply(1:ncol(df), FUN = function(i){
+    res <- sum(df[,i] != 0) / nrow(df)
+    res
+  })
+  df_pre <- do.call("rbind", df_pre)
+  rownames(df_pre) <- colnames(df)
+  #
+  df_sel <- merge(df_dis, df_pre, by = "row.names")
+  names(df_sel) <- c("Genus", "Variance", "Presence")
+  res <- df_sel %>%
+    dplyr::filter(Presence > threshold) %>%
+    dplyr::slice_min(n = num_selected, order_by = Variance)
+  res[num_selected + 1,] <- df_sel[nrow(df_sel),]
+  idx <- match(res$Genus, colnames(df))
+  res$idx <- idx
+  res
 }
