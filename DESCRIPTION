@@ -22,7 +22,6 @@ Imports:
    VGAM,
    Matrix (>= 1.5),
    glmnet
-   dplyr
 Suggests:
    parallel,
    boot,
